@@ -127,5 +127,5 @@
 
   const SDOH = [['food', 'Food insecurity'], ['housing', 'Housing instability'], ['transport', 'Transportation barrier'], ['caregiver', 'No reliable caregiver'], ['insurance', 'Medicaid or uninsured'], ['rural', 'Rural residence'], ['literacy', 'Limited health literacy'], ['financial', 'Financial strain'], ['employment', 'Unemployed or unable to work']];
 
-  g.USCRS = {COEF, TRIM, IMPUTE, TIERS, REF, NODEV, W, ckdEpi2021, toScore, tierOf, mort6, linpred, prepare, evaluate, contributions, whatIf, discordance, summary, EXAMPLES, SDOH, VERSION: '1.1'};
+  g.USCRS = {COEF, TRIM, IMPUTE, TIERS, REF, NODEV, W, ckdEpi2021, toScore, tierOf, mort6, linpred, prepare, evaluate, contributions, whatIf, discordance, summary, EXAMPLES, SDOH, VERSION: '1.2'};
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -1,21 +1,24 @@
 /* US-CRS 2.0 service worker — minimal, same-origin only.
    Bump CACHE (e.g. -v2) on deploy to refresh precached assets. */
-const CACHE = 'uscrs-v2';
+const CACHE = 'uscrs-v3';
 const ASSETS = [
   './',
   './index.html',
   './mobile.html',
   './model.js',
   './manifest.json',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-  './icons/icon-maskable-512.png',
-  './icons/apple-touch-icon-180.png'
+  './icon-192.png',
+  './icon-512.png',
+  './icon-maskable-512.png',
+  './apple-touch-icon-180.png'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE)
+      // Cache each file on its own so one missing file cannot stop offline support.
+      .then((cache) => Promise.allSettled(ASSETS.map((a) => cache.add(a))))
+      .then(() => self.skipWaiting())
   );
 });
 
