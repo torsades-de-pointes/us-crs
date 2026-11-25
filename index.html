@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="champagne">
+<head>
+<meta charset="utf-8">
+<script>
+/* Route phones to the mobile build unless the user chose desktop (?desktop or saved preference). */
+(function(){try{
+  var q=location.search, pref=localStorage.getItem('uscrs-view');
+  if(/[?&]desktop\b/.test(q)){localStorage.setItem('uscrs-view','desktop');return;}
+  var narrow=Math.min(screen.width,innerWidth)<=760, touch=matchMedia('(pointer: coarse)').matches||navigator.maxTouchPoints>0||/Mobi|iPhone|iPod|Android/i.test(navigator.userAgent), phone=narrow&&touch;
+  if(pref!=='desktop' && (pref==='mobile' || phone)) location.replace('mobile.html'+location.hash);
+}catch(e){}})();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>US-CRS 2.0 · Heart Allocation Urgency Calculator</title>
+<meta name="description" content="Calculator for the US Candidate Risk Score 2.0 (Lyden et al., JAMA 2026): 50-point medical urgency score for adult heart transplant candidates.">
+<meta name="theme-color" content="#f3ede4">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="US-CRS 2.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Nunito:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --font-d:'Fraunces','Iowan Old Style','Palatino Linotype',Georgia,serif;
+  --font-b:'Nunito','Segoe UI',system-ui,sans-serif;
+  --font-m:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  --r:16px;
+}
+[data-theme="champagne"]{
+  --bg:#f3ede4; --panel:#fffdfa; --inset:#f5efe5; --line:#e3d9ca; --line2:#e9e0d2;
+  --ink:#2a2320; --ink2:#5f5449; --ink3:#9c8f80;
+  --accent:#a8465c; --accent-soft:#f9edef;
+  --t1:#8f2f45; --t2:#b8384f; --t3:#c0851a; --t4:#41608f; --t5:#2f8577; --t6:#7b8a7f;
+  --ok:#2f7a5c; --warn:#a9761b;
+  --shadow:0 1px 2px rgba(60,40,20,.05),0 6px 24px rgba(60,40,20,.06); --shadow-sm:0 1px 3px rgba(60,40,20,.12);
+  --mark-bg:#fdf7ee;
+}
+[data-theme="monitor"]{
+  --bg:#080b10; --panel:#0f151d; --inset:#0c1219; --line:#1f2a37; --line2:#1a2430;
+  --ink:#e6edf5; --ink2:#93a1b3; --ink3:#54636f;
+  --accent:#ff5a6e; --accent-soft:#25121a;
+  --t1:#ff5a6e; --t2:#ff8a5c; --t3:#f3b52f; --t4:#5f8dff; --t5:#39d6c0; --t6:#6f7f8f;
+  --ok:#2ee3a6; --warn:#f3b52f;
+  --shadow:0 2px 24px rgba(0,0,0,.5); --shadow-sm:0 1px 3px rgba(0,0,0,.4);
+  --mark-bg:#141c26;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-b);font-size:15px;line-height:1.55;min-height:100vh;-webkit-font-smoothing:antialiased;transition:background .3s,color .3s;padding-bottom:env(safe-area-inset-bottom)}
+a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+button,input,select{font:inherit;color:inherit}
+
+/* top bar */
+.topbar{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--panel) 88%,transparent);backdrop-filter:saturate(1.4) blur(10px);-webkit-backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.topbar-inner{max-width:1180px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:11px}
+.brand-mark{width:40px;height:40px;border-radius:11px;background:var(--mark-bg);border:1px solid var(--line);display:flex;align-items:center;justify-content:center}
+.brand-mark img{width:34px;height:34px;border-radius:8px}
+.brand-name{font-family:var(--font-d);font-weight:600;font-size:19px;line-height:1.05}
+.brand-name .v{color:var(--accent)}
+.brand-tag{font-family:var(--font-m);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);margin-top:3px}
+.nav{display:flex;gap:2px;margin-left:auto;background:var(--inset);padding:4px;border-radius:12px;border:1px solid var(--line2)}
+.nav button{font-weight:600;font-size:13px;color:var(--ink2);background:none;border:none;padding:7px 14px;border-radius:8px;cursor:pointer}
+.nav button.active{background:var(--panel);color:var(--accent);box-shadow:var(--shadow-sm)}
+.viewlink{font-size:12.5px;font-weight:700;color:var(--ink2);border:1px solid var(--line2);background:var(--inset);border-radius:20px;padding:6px 12px}
+.viewlink:hover{text-decoration:none;color:var(--accent)}
+.theme-toggle{display:flex;gap:4px;background:var(--inset);border:1px solid var(--line2);border-radius:20px;padding:4px}
+.theme-toggle button{background:none;border:none;cursor:pointer;padding:4px 9px;border-radius:16px;color:var(--ink3);font-size:12px;font-weight:600}
+.theme-toggle button.on{background:var(--panel);color:var(--accent);box-shadow:var(--shadow-sm)}
+
+.wrap{max-width:1180px;margin:0 auto;padding:18px}
+.view{display:none}.view.active{display:block}
+.banner{font-size:13px;color:var(--ink2);background:var(--inset);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:16px}
+.banner b{color:var(--ink)}
+
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:16px;align-items:start}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:16px 18px;margin-bottom:16px}
+.panel h2{font-family:var(--font-d);font-weight:600;font-size:18px;margin-bottom:2px}
+.panel .sub{font-family:var(--font-m);font-size:10.5px;color:var(--ink3);letter-spacing:.03em;margin-bottom:12px}
+.sticky{position:sticky;top:78px}
+#results{scroll-margin-top:84px}
+
+/* fields */
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 14px}
+.field label{display:flex;justify-content:space-between;align-items:baseline;font-weight:600;font-size:13.5px;margin-bottom:4px}
+.field label .u{font-family:var(--font-m);font-size:10.5px;color:var(--ink3);font-weight:500}
+.field input[type=number],.field input[type=text],.field select{width:100%;background:var(--inset);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:16px;font-family:var(--font-m);outline:none;transition:border .15s}
+.field input:focus,.field select:focus{border-color:var(--accent)}
+.field .hint{font-size:11.5px;color:var(--ink3);margin-top:3px;min-height:16px}
+.field .hint.flag{color:var(--warn)}
+.seg{display:inline-flex;background:var(--inset);border:1px solid var(--line2);border-radius:10px;padding:3px;gap:2px;margin-bottom:6px}
+.seg button{border:none;background:none;padding:5px 11px;border-radius:7px;font-size:12.5px;font-weight:600;color:var(--ink2);cursor:pointer}
+.seg button.on{background:var(--panel);color:var(--accent);box-shadow:var(--shadow-sm)}
+.span2{grid-column:1/-1}
+.subfields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+/* devices */
+.devices{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dev{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);background:var(--inset);border-radius:12px;padding:11px 12px;cursor:pointer;user-select:none;-webkit-user-select:none;transition:all .15s}
+.dev input{display:none}
+.dev .box{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--ink3);flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center}
+.dev.on{border-color:var(--accent);background:var(--accent-soft)}
+.dev.on .box{background:var(--accent);border-color:var(--accent)}
+.dev.on .box::after{content:'';width:9px;height:5px;border:2px solid #fff;border-top:none;border-right:none;transform:rotate(-45deg) translate(1px,-1px)}
+.dev .t{font-weight:700;font-size:14px;line-height:1.25}
+.dev .d{font-size:11.5px;color:var(--ink3);line-height:1.35;margin-top:2px}
+.dev .pts{font-family:var(--font-m);font-size:11px;color:var(--accent);margin-top:3px}
+
+details{border-top:1px solid var(--line);padding-top:10px;margin-top:4px}
+summary{cursor:pointer;font-weight:700;font-size:14px;list-style:none;display:flex;justify-content:space-between;align-items:center}
+summary::-webkit-details-marker{display:none}
+summary .chev{font-family:var(--font-m);color:var(--ink3);font-size:12px}
+details[open] summary .chev{transform:rotate(90deg)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.chip{border:1px solid var(--line);background:var(--inset);border-radius:20px;padding:6px 12px;font-size:12.5px;font-weight:600;color:var(--ink2);cursor:pointer;user-select:none;-webkit-user-select:none}
+.chip.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.tag-beta{font-family:var(--font-m);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--warn);border:1px solid currentColor;border-radius:6px;padding:1px 6px;margin-left:8px}
+
+/* results */
+.score-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.score-big{font-family:var(--font-d);font-weight:700;font-size:64px;line-height:.9;color:var(--accent)}
+.score-big small{font-size:20px;color:var(--ink3);font-weight:500}
+.tier-pill{display:inline-block;font-weight:700;font-size:13px;padding:5px 12px;border-radius:20px;color:#fff}
+.meter{position:relative;height:14px;border-radius:7px;margin:16px 0 4px;display:flex;overflow:hidden}
+.meter span{display:block;height:100%}
+.meter-mark{position:absolute;top:-5px;width:4px;height:24px;border-radius:2px;background:var(--ink);transform:translateX(-50%);transition:left .25s}
+.meter-wrap{position:relative}
+.ticks{display:flex;justify-content:space-between;font-family:var(--font-m);font-size:10px;color:var(--ink3)}
+.kv{display:grid;grid-template-columns:1fr auto;gap:6px 12px;margin-top:14px;font-size:14px}
+.kv .k{color:var(--ink2)} .kv .v{font-family:var(--font-m);font-weight:600;text-align:right}
+.msg{font-size:13px;border-radius:10px;padding:9px 12px;margin-top:12px;border:1px solid var(--line);background:var(--inset)}
+.msg.warn{border-color:color-mix(in srgb,var(--warn) 45%,transparent);color:var(--ink)}
+.msg.alert{border-color:color-mix(in srgb,var(--accent) 45%,transparent)}
+.msg b{font-weight:700}
+.contrib{margin-top:6px}
+.crow{display:grid;grid-template-columns:118px 1fr 48px;align-items:center;gap:8px;font-size:12.5px;margin:5px 0}
+.crow .lbl{color:var(--ink2)}
+.cbar{position:relative;height:10px;background:var(--inset);border-radius:5px}
+.cbar .mid{position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--ink3)}
+.cbar .b{position:absolute;top:0;height:100%;border-radius:5px}
+.crow .val{font-family:var(--font-m);text-align:right;font-weight:600}
+table.wi{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+table.wi td{padding:6px 4px;border-bottom:1px solid var(--line)}
+table.wi td:last-child{text-align:right;font-family:var(--font-m);font-weight:600}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.btn{border:1px solid var(--line);background:var(--inset);border-radius:10px;padding:9px 14px;font-weight:700;font-size:13px;cursor:pointer;color:var(--ink)}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.examples{display:flex;flex-wrap:wrap;gap:8px}
+.note{font-size:12px;color:var(--ink3);margin-top:10px;line-height:1.45}
+
+/* method view */
+.prose{max-width:860px}
+.prose h3{font-family:var(--font-d);font-weight:600;font-size:17px;margin:18px 0 6px}
+.prose p,.prose li{font-size:14.5px;color:var(--ink2);margin-bottom:8px}
+.prose ul{padding-left:20px}
+.formula{font-family:var(--font-m);font-size:12.5px;background:var(--inset);border:1px solid var(--line);border-radius:10px;padding:12px 14px;overflow-x:auto;white-space:pre;color:var(--ink)}
+table.ref{border-collapse:collapse;font-size:13px;width:100%;margin:6px 0 12px}
+table.ref th{text-align:left;font-weight:700;border-bottom:2px solid var(--line);padding:6px 8px;color:var(--ink)}
+table.ref td{border-bottom:1px solid var(--line);padding:6px 8px;color:var(--ink2);font-family:var(--font-m);font-size:12.5px}
+table.ref td:first-child{font-family:var(--font-b);font-size:13px;color:var(--ink)}
+
+/* mobile score dock */
+.dock{display:none}
+@media (max-width:920px){
+  .grid{grid-template-columns:1fr}
+  .sticky{position:static}
+  .dock{display:flex;position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:60;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:10px 14px;align-items:center;gap:12px;cursor:pointer}
+  .dock .s{font-family:var(--font-d);font-weight:700;font-size:28px;color:var(--accent);line-height:1}
+  .dock .t{font-size:13px;font-weight:700}
+  .dock .m{font-size:12px;color:var(--ink3);margin-left:auto;font-family:var(--font-m)}
+  body{padding-bottom:90px}
+}
+@media (max-width:560px){
+  .topbar{position:static}
+  .topbar-inner{gap:10px;padding:8px 14px}
+  .brand-tag{display:none}
+  .nav button{padding:6px 12px}
+  .fields,.devices{grid-template-columns:1fr}
+  .nav{margin-left:0;order:3;width:100%;justify-content:center}
+  .theme-toggle{margin-left:auto}
+  .score-big{font-size:56px}
+  .crow{grid-template-columns:100px 1fr 44px}
+}
+@media print{.topbar,.dock,.btns,.examples,details{display:none!important}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="topbar-inner">
+  <div class="brand">
+    <div class="brand-mark"><img src="icons/icon-192.png" alt=""></div>
+    <div><div class="brand-name">US-CRS <span class="v">2.0</span></div><div class="brand-tag">Heart allocation urgency score</div></div>
+  </div>
+  <nav class="nav" aria-label="Sections">
+    <button class="active" data-view="calc">Calculator</button>
+    <button data-view="method">Method</button>
+    <button data-view="about">About</button>
+  </nav>
+  <a class="viewlink" id="to-mobile" href="mobile.html">Mobile version</a>
+  <div class="theme-toggle" role="group" aria-label="Theme">
+    <button data-t="champagne" class="on">Day</button><button data-t="monitor">Night</button>
+  </div>
+</div></header>
+
+<main class="wrap">
+<!-- ================= CALCULATOR ================= -->
+<section class="view active" id="view-calc">
+  <div class="banner"><b>Research and education tool.</b> US-CRS 2.0 is a proposed score (Lyden et al., JAMA 2026). It is not part of current OPTN heart allocation policy and does not determine a candidate's status. Do not enter names or identifiers; nothing is stored or sent anywhere.</div>
+  <div class="grid">
+    <div>
+      <div class="panel">
+        <h2>Laboratory values</h2>
+        <div class="sub">Most recent values (status forms update about every 14 days). Leave blank if not available.</div>
+        <div class="fields">
+          <div class="field"><label for="alb">Albumin <span class="u">g/dL</span></label><input id="alb" type="number" inputmode="decimal" step="0.1" placeholder="e.g. 3.6"><div class="hint" id="h-alb"></div></div>
+          <div class="field"><label for="bili">Total bilirubin <span class="u">mg/dL</span></label><input id="bili" type="number" inputmode="decimal" step="0.1" placeholder="e.g. 1.0"><div class="hint" id="h-bili"></div></div>
+          <div class="field"><label for="na">Sodium <span class="u">mEq/L</span></label><input id="na" type="number" inputmode="decimal" step="1" placeholder="e.g. 135"><div class="hint" id="h-na"></div></div>
+          <div class="field">
+            <label>Natriuretic peptide <span class="u">pg/mL</span></label>
+            <div class="seg" id="seg-np"><button data-v="nt" class="on">NT-proBNP</button><button data-v="bnp">BNP</button></div>
+            <input id="np" type="number" inputmode="decimal" step="1" placeholder="e.g. 2500" aria-label="Natriuretic peptide value"><div class="hint" id="h-np"></div>
+          </div>
+          <div class="field span2">
+            <label>Kidney function <span class="u">CKD-EPI 2021 (race-free)</span></label>
+            <div class="seg" id="seg-kid"><button data-v="cr" class="on">From creatinine</button><button data-v="egfr">Enter eGFR</button></div>
+            <div class="subfields" id="kid-cr">
+              <div class="field"><input id="cr" type="number" inputmode="decimal" step="0.01" placeholder="Creatinine mg/dL" aria-label="Creatinine mg/dL"></div>
+              <div class="field"><input id="age" type="number" inputmode="numeric" step="1" placeholder="Age, years" aria-label="Age in years"></div>
+              <div class="field"><select id="sex" aria-label="Sex"><option value="m">Male</option><option value="f">Female</option></select></div>
+            </div>
+            <div id="kid-egfr" style="display:none"><input id="egfr" type="number" inputmode="decimal" step="1" placeholder="eGFR mL/min/1.73 m²" aria-label="eGFR"></div>
+            <div class="hint" id="h-egfr"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Mechanical circulatory support</h2>
+        <div class="sub">Definitions follow the paper: LVAD and advanced MCS = any use since listing; IABP and microaxial pump = current use.</div>
+        <div class="devices">
+          <label class="dev" id="d-lvad"><input type="checkbox" id="lvad"><span class="box"></span><span><div class="t">Durable LVAD</div><div class="d">Ever since listing</div><div class="pts">about −3.5 points</div></span></label>
+          <label class="dev" id="d-amcs"><input type="checkbox" id="amcs"><span class="box"></span><span><div class="t">Advanced MCS</div><div class="d">VA-ECMO or temporary surgical VAD, ever since listing</div><div class="pts">about +13.6 points</div></span></label>
+          <label class="dev" id="d-iabp"><input type="checkbox" id="iabp"><span class="box"></span><span><div class="t">IABP</div><div class="d">Current intra-aortic balloon pump</div><div class="pts">about +6.2 points</div></span></label>
+          <label class="dev" id="d-mfp"><input type="checkbox" id="mfp"><span class="box"></span><span><div class="t">Microaxial flow pump</div><div class="d">Current Impella or similar</div><div class="pts">about +6.1 points</div></span></label>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Comparison (optional)</h2>
+        <div class="sub">Current OPTN adult status, to flag discordance with the score.</div>
+        <div class="fields">
+          <div class="field"><label for="status">Current status</label>
+            <select id="status"><option value="">Not entered</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></div>
+          <div class="field"><label for="exc">Listed by exception?</label>
+            <select id="exc"><option value="0">No</option><option value="1">Yes</option></select></div>
+        </div>
+        <details id="sdoh">
+          <summary><span>Social context <span class="tag-beta">beta · not scored</span></span><span class="chev">›</span></summary>
+          <p class="note">Recorded for planned future versions that will study social risk alongside the score. These fields do not change the US-CRS result.</p>
+          <div class="fields" style="margin-top:8px">
+            <div class="field"><label for="zip">Home ZIP code <span class="u">5 digits</span></label><input id="zip" type="text" inputmode="numeric" maxlength="5" placeholder="e.g. 35233"><div class="hint" id="h-zip"></div></div>
+            <div class="field"><label for="drive">Drive time to center <span class="u">minutes</span></label><input id="drive" type="number" inputmode="numeric" placeholder="e.g. 120"></div>
+          </div>
+          <div class="chips" id="sdoh-chips">
+            <span class="chip" data-k="food">Food insecurity</span>
+            <span class="chip" data-k="housing">Housing instability</span>
+            <span class="chip" data-k="transport">Transportation barrier</span>
+            <span class="chip" data-k="caregiver">No reliable caregiver</span>
+            <span class="chip" data-k="insurance">Medicaid or uninsured</span>
+            <span class="chip" data-k="rural">Rural residence</span>
+            <span class="chip" data-k="literacy">Limited health literacy</span>
+            <span class="chip" data-k="financial">Financial strain</span>
+            <span class="chip" data-k="employment">Unemployed or unable to work</span>
+          </div>
+          <div class="note" id="sdoh-count">Adverse social factors: 0 of 9</div>
+        </details>
+      </div>
+
+      <div class="panel">
+        <h2>Worked examples</h2>
+        <div class="sub">Teaching cases from the UAB AHFTC journal club. Not real patients.</div>
+        <div class="examples">
+          <button class="btn" data-ex="1">Late rural transfer on milrinone</button>
+          <button class="btn" data-ex="2">IABP, near-normal labs</button>
+          <button class="btn" data-ex="3">Stable HeartMate 3</button>
+          <button class="btn" data-ex="4">VA-ECMO, BNP missing</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- results -->
+    <div class="sticky" id="results">
+      <div class="panel">
+        <div class="score-head">
+          <div><div class="sub" style="margin:0 0 6px">US-CRS 2.0 score</div><div class="score-big" id="score">–<small> /50</small></div></div>
+          <span class="tier-pill" id="tier">Enter values</span>
+        </div>
+        <div class="meter-wrap">
+          <div class="meter" id="meter"></div>
+          <div class="meter-mark" id="mark" style="left:0%;display:none"></div>
+        </div>
+        <div class="ticks"><span>1</span><span>20</span><span>30</span><span>40</span><span>45</span><span>50</span></div>
+        <div class="kv">
+          <div class="k">Est. 6-week death without transplant</div><div class="v" id="mort">–</div>
+          <div class="k">Lab-only score (devices removed)</div><div class="v" id="labonly">–</div>
+          <div class="k">Linear predictor (weekly log-odds)</div><div class="v" id="lp">–</div>
+        </div>
+        <div id="msgs"></div>
+        <div class="btns">
+          <button class="btn primary" id="copy">Copy summary</button>
+          <button class="btn" id="reset">Reset</button>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>What drives the score</h2>
+        <div class="sub">Points relative to a typical candidate (national medians, no devices)</div>
+        <div class="contrib" id="contrib"></div>
+      </div>
+      <div class="panel">
+        <h2>Device what-if</h2>
+        <div class="sub">Same labs, one device changed</div>
+        <table class="wi" id="whatif"></table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= METHOD ================= -->
+<section class="view" id="view-method">
+  <div class="panel prose">
+    <h2>How the score is calculated</h2>
+    <p>US-CRS 2.0 is a weighted pooled logistic (discrete-time) model of death or delisting for deterioration within 6 weeks, fitted as a marginal structural model so that it estimates risk in a world without transplant. The linear predictor is the log-odds of the weekly hazard.</p>
+    <div class="formula">LP = 7.45
+   − 0.837 × albumin (g/dL)
+   + 0.911 × ln(bilirubin + 1)
+   − 0.00862 × eGFR
+   + 0.178 × ln(NP + 1)
+   − 1.449 × NT
+   + 0.139 × ln(NP + 1) × NT
+   − 0.07954 × sodium
+   − 0.43 × durable LVAD
+   + 0.757 × IABP
+   + 0.75 × microaxial flow pump
+   + 1.676 × advanced MCS
+
+NP = BNP or NT-proBNP value; NT = 1 if NT-proBNP, 0 if BNP.</div>
+    <h3>From linear predictor to the 50-point score</h3>
+    <p>The paper maps the linear predictor to integers 1–50 by equal-width bins (eTable 16): a score of 50 is LP above −3.5457, a score of 1 is LP at or below −9.4417, and each point in between spans about 0.1228 log-odds. The 6-Status US-CRS tiers used in the paper's match-run analysis are: tier 1 = 50, tier 2 = 45–49, tier 3 = 40–44, tier 4 = 30–39, tier 5 = 20–29, tier 6 = 1–19.</p>
+    <h3>Estimated 6-week mortality</h3>
+    <p>The calculator converts the weekly hazard h = 1 / (1 + e<sup>−LP</sup>) to 6-week risk as 1 − (1 − h)<sup>6</sup>. This is an approximation of the model's prediction. The authors report that the model over-estimates risk in the highest-risk candidates, so treat values above about 20% as relative, not absolute.</p>
+    <h3>Trimming and missing values</h3>
+    <p>As in the paper, values are trimmed to the training data's 1st and 99th percentiles (eTable 3), and missing labs are replaced with the national sample median (eTable 2). The calculator flags any value that was trimmed or imputed.</p>
+    <table class="ref">
+      <tr><th>Variable</th><th>Lower bound</th><th>Upper bound</th><th>If missing</th></tr>
+      <tr><td>Albumin (g/dL)</td><td>2.5</td><td>5.1</td><td>4.1</td></tr>
+      <tr><td>Bilirubin (mg/dL)</td><td>0.2</td><td>2.8</td><td>0.6</td></tr>
+      <tr><td>eGFR (mL/min/1.73 m²)</td><td>5.38</td><td>129.95</td><td>creatinine 1.2</td></tr>
+      <tr><td>Sodium (mEq/L)</td><td>129</td><td>145</td><td>138</td></tr>
+      <tr><td>BNP (pg/mL)</td><td>14</td><td>3,845</td><td>237</td></tr>
+      <tr><td>NT-proBNP (pg/mL)</td><td>41</td><td>34,163</td><td>912</td></tr>
+    </table>
+    <p>eGFR uses the race-free CKD-EPI 2021 creatinine equation. If creatinine is missing, the paper's imputed creatinine (1.2 mg/dL) is used with the entered age and sex.</p>
+    <h3>Adjusted hazard ratios</h3>
+    <table class="ref">
+      <tr><th>Term</th><th>Coefficient</th><th>Robust 95% CI</th></tr>
+      <tr><td>Albumin (per g/dL)</td><td>−0.837</td><td>−0.948 to −0.725</td></tr>
+      <tr><td>ln(bilirubin + 1)</td><td>0.911</td><td>0.723 to 1.100</td></tr>
+      <tr><td>eGFR (per mL/min)</td><td>−0.009</td><td>−0.011 to −0.007</td></tr>
+      <tr><td>ln(BNP + 1)</td><td>0.178</td><td>0.118 to 0.239</td></tr>
+      <tr><td>NT-proBNP indicator</td><td>−1.449</td><td>−2.082 to −0.817</td></tr>
+      <tr><td>ln(NP + 1) × NT-proBNP</td><td>0.139</td><td>0.048 to 0.230</td></tr>
+      <tr><td>Sodium (per mEq/L)</td><td>−0.080</td><td>−0.097 to −0.062</td></tr>
+      <tr><td>Durable LVAD (aHR 0.65)</td><td>−0.430</td><td>−0.539 to −0.321</td></tr>
+      <tr><td>IABP (aHR 2.13)</td><td>0.757</td><td>0.538 to 0.977</td></tr>
+      <tr><td>Microaxial flow pump (aHR 2.12)</td><td>0.750</td><td>0.451 to 1.050</td></tr>
+      <tr><td>Advanced MCS (aHR 5.34)</td><td>1.676</td><td>1.364 to 1.988</td></tr>
+    </table>
+    <h3>Performance in the paper</h3>
+    <p>In held-out test data (September 2024 to August 2025), mean weighted time-dependent AUC was 0.807 for US-CRS 2.0 vs 0.693 for the current 6-status system. The score was well calibrated for candidates listed by exception.</p>
+    <h3>Known limitations</h3>
+    <ul>
+      <li>No hemodynamics, diagnosis, age or sex in the score; restrictive, infiltrative and congenital disease are scored on the same labs.</li>
+      <li>Lab caps flatten the top of the scale (for example, bilirubin above 2.8 mg/dL adds nothing more).</li>
+      <li>NT-proBNP runs lower with obesity and in Black adults, which may lower the score for some patients.</li>
+      <li>Device points depend on access to devices; the score has not been validated across social-risk groups.</li>
+      <li>The score predicts urgency only; it says nothing about expected benefit after transplant.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ================= ABOUT ================= -->
+<section class="view" id="view-about">
+  <div class="panel prose">
+    <h2>About</h2>
+    <p>A free, open, client-side calculator for the US Candidate Risk Score 2.0, built for the Advanced Heart Failure and Transplant Cardiology program at UAB as a teaching and research aid for transplant coordinators, attendings and fellows.</p>
+    <h3>Source</h3>
+    <p>Lyden GR, White M, Ahn DJ, Menteer J, Daly RC, Narang N, Khush KK, Jasseron C, Dorent R, Masotti M, Wood NL, Colvin MM, Gentry SE, Parker WF. Development and validation of an adult medical urgency score for US donor heart allocation. <i>JAMA</i>. 2026;336(18):1621–1629. <a href="https://doi.org/10.1001/jama.2026.17403">doi:10.1001/jama.2026.17403</a></p>
+    <p>Earlier version: Zhang KC, et al. <i>JAMA</i>. 2024;331(6):500. <a href="https://doi.org/10.1001/jama.2023.27029">doi:10.1001/jama.2023.27029</a>. The authors' code: <a href="https://github.com/mollywhite19/US-CRS-2.0">github.com/mollywhite19/US-CRS-2.0</a>.</p>
+    <h3>Install on your phone</h3>
+    <ul>
+      <li><b>iPhone (Safari):</b> tap Share, then <i>Add to Home Screen</i>.</li>
+      <li><b>Android (Chrome):</b> tap the ⋮ menu, then <i>Install app</i> or <i>Add to Home screen</i>.</li>
+    </ul>
+    <p>Once installed, the calculator works offline. Phones open the <a href="mobile.html">mobile version</a> automatically; the <a href="index.html?desktop">desktop version</a> is one tap away in its Info tab.</p>
+    <h3>Privacy</h3>
+    <p>Everything runs in your browser. No values are saved, uploaded or logged. Do not enter patient names, MRNs or dates of birth.</p>
+    <h3>Roadmap</h3>
+    <ul>
+      <li>v2: area-level social context from ZIP code (Area Deprivation Index, Social Vulnerability Index, rurality) shown alongside the score.</li>
+      <li>v2: count of adverse social determinants, for research on whether social risk modifies score performance.</li>
+      <li>v3: serial scores over time (trajectory), and a lab-timing view aligned to status forms.</li>
+    </ul>
+    <h3>Disclaimer</h3>
+    <p>For education and research. Not a medical device and not a substitute for clinical judgment or OPTN policy. The score is not currently used in US heart allocation.</p>
+    <p class="note" id="ver">Version 1.1 · November 2026 · Desktop · MIT License</p>
+  </div>
+</section>
+</main>
+
+<div class="dock" id="dock" role="button" aria-label="Jump to result"><div class="s" id="dock-s">–</div><div><div class="t" id="dock-t">Enter values</div></div><div class="m" id="dock-m"></div></div>
+
+<script src="model.js"></script>
+<script>
+'use strict';
+const M = window.USCRS, {TIERS, REF} = M;
+const $ = id => document.getElementById(id);
+const num = id => { const v = $(id).value.trim(); if (v === '') return null; const x = Number(v); return Number.isFinite(x) ? x : null; };
+const state = {np:'nt', kid:'cr', sdoh:new Set()};
+
+function readInputs(){
+  const raw = {alb:num('alb'), bili:num('bili'), na:num('na'), np:num('np'), isNT:state.np === 'nt', kid:state.kid, egfr:num('egfr'), cr:num('cr'), age:num('age'), female:$('sex').value === 'f'};
+  const p = M.prepare(raw);
+  const dev = {lvad:$('lvad').checked, iabp:$('iabp').checked, mfp:$('mfp').checked, amcs:$('amcs').checked};
+  const anyLab = ['alb','bili','na','np','cr','egfr'].some(id => num(id) !== null);
+  return {x:p.x, flags:p.flags, hints:p.hints, dev, anyLab};
+}
+function buildMeter(){
+  const m = $('meter'); m.innerHTML = '';
+  [...TIERS].reverse().forEach(t => { const sp = document.createElement('span'); sp.style.width = ((t.hi - t.lo + 1) / 50 * 100) + '%'; sp.style.background = `var(${t.col})`; sp.style.opacity = '.85'; m.appendChild(sp); });
+}
+let last = null;
+function render(){
+  const r = readInputs();
+  ['alb','bili','na','np'].forEach(id => { const h = $('h-' + id); h.textContent = r.hints[id] || ''; h.className = 'hint' + (r.hints[id] ? ' flag' : ''); });
+  $('h-egfr').textContent = r.hints.egfr || ''; $('h-egfr').className = 'hint' + (/(Missing|missing|scored|assumed)/.test(r.hints.egfr || '') ? ' flag' : '');
+  document.querySelectorAll('.dev').forEach(d => d.classList.toggle('on', d.querySelector('input').checked));
+  if (!r.anyLab && !Object.values(r.dev).some(Boolean)){ clearResults(); return; }
+  const ev = M.evaluate(r.x, r.dev), {s, t, m} = ev;
+  last = {r, ev};
+  $('score').innerHTML = `${s}<small> /50</small>`;
+  const pill = $('tier'); pill.textContent = `6-Status US-CRS ${t.name}`; pill.style.background = `var(${t.col})`;
+  const mk = $('mark'); mk.style.display = 'block'; mk.style.left = ((s - 0.5) / 50 * 100) + '%';
+  $('mort').textContent = (m * 100).toFixed(1) + '%';
+  $('labonly').textContent = `${ev.sLab} (${ev.tLab.name})`;
+  $('lp').textContent = ev.lp.toFixed(3);
+  $('dock-s').textContent = s; $('dock-t').textContent = `${t.name} · ${(m * 100).toFixed(1)}% 6-wk`; $('dock-m').textContent = 'details ↓';
+  const msgs = [];
+  if (r.dev.lvad && (r.dev.iabp || r.dev.mfp)) msgs.push(['warn', '<b>Check devices.</b> Durable LVAD plus a temporary pump is unusual; the model adds each term independently.']);
+  const dc = M.discordance($('status').value, $('exc').value === '1', t); if (dc) msgs.push([dc.cls, dc.html]);
+  if (r.flags.length) msgs.push(['warn', '<b>Imputed or capped values:</b><br>' + r.flags.map(f => '• ' + f).join('<br>')]);
+  if (m > 0.2) msgs.push(['', 'The model over-estimates absolute risk at the top of the scale; read high estimates as relative.']);
+  $('msgs').innerHTML = msgs.map(([c, h]) => `<div class="msg ${c}">${h}</div>`).join('');
+  const rows = M.contributions(r.x, r.dev);
+  const maxAbs = Math.max(14, ...rows.map(x => Math.abs(x[1])));
+  $('contrib').innerHTML = rows.map(([k, p]) => {
+    const w = Math.abs(p) / maxAbs * 50, left = p >= 0 ? 50 : 50 - w, col = p >= 0 ? 'var(--accent)' : 'var(--ok)';
+    return `<div class="crow"><span class="lbl">${k}</span><span class="cbar"><span class="mid"></span><span class="b" style="left:${left}%;width:${w}%;background:${col}"></span></span><span class="val">${p >= 0 ? '+' : '−'}${Math.abs(p).toFixed(1)}</span></div>`;
+  }).join('') + `<div class="note">Typical candidate: albumin 4.1, bilirubin 0.6, eGFR 67, sodium 138, NT-proBNP 912, no devices (score ${M.toScore(M.linpred(REF))}). Red adds urgency, green lowers it.</div>`;
+  $('whatif').innerHTML = M.whatIf(r.x, r.dev).map(w => `<tr><td>${w.label}</td><td>${w.s} · ${w.t.name} <span style="color:var(--ink3)">(${w.d > 0 ? '+' : w.d < 0 ? '−' : '±'}${Math.abs(w.d)})</span></td></tr>`).join('');
+}
+function clearResults(){
+  last = null;
+  $('score').innerHTML = '–<small> /50</small>'; $('tier').textContent = 'Enter values'; $('tier').style.background = 'var(--ink3)';
+  $('mark').style.display = 'none'; ['mort','labonly','lp'].forEach(i => $(i).textContent = '–');
+  $('msgs').innerHTML = ''; $('contrib').innerHTML = '<div class="note">Enter at least one lab value or device.</div>'; $('whatif').innerHTML = '';
+  $('dock-s').textContent = '–'; $('dock-t').textContent = 'Enter values'; $('dock-m').textContent = '';
+}
+function summary(){
+  if (!last) return 'US-CRS 2.0: no values entered.';
+  return M.summary({x:last.r.x, dev:last.r.dev, ev:last.ev, flags:last.r.flags, status:$('status').value, exc:$('exc').value === '1', zip:$('zip').value, sdohCount:state.sdoh.size});
+}
+function setSeg(id, v){ document.querySelectorAll(`#${id} button`).forEach(b => b.classList.toggle('on', b.dataset.v === v)); }
+function setKid(v){ state.kid = v; setSeg('seg-kid', v); $('kid-cr').style.display = v === 'cr' ? '' : 'none'; $('kid-egfr').style.display = v === 'egfr' ? '' : 'none'; }
+function loadEx(k){
+  const e = M.EXAMPLES[k]; $('alb').value = e.alb; $('bili').value = e.bili; $('na').value = e.na; $('np').value = e.np == null ? '' : e.np;
+  state.np = e.isNT ? 'nt' : 'bnp'; setSeg('seg-np', state.np); setKid(e.kid); $('egfr').value = e.egfr; $('cr').value = ''; $('age').value = '';
+  ['lvad','iabp','mfp','amcs'].forEach(d => $(d).checked = !!e.dev[d]);
+  $('status').value = e.status; $('exc').value = e.exc ? '1' : '0'; render();
+}
+document.querySelectorAll('input,select').forEach(el => el.addEventListener('input', render));
+document.querySelectorAll('.dev input').forEach(el => el.addEventListener('change', render));
+document.querySelectorAll('#seg-np button').forEach(b => b.onclick = () => { state.np = b.dataset.v; setSeg('seg-np', b.dataset.v); $('np').placeholder = state.np === 'nt' ? 'e.g. 2500' : 'e.g. 600'; render(); });
+document.querySelectorAll('#seg-kid button').forEach(b => b.onclick = () => { setKid(b.dataset.v); render(); });
+document.querySelectorAll('#sdoh-chips .chip').forEach(c => c.onclick = () => { const k = c.dataset.k; state.sdoh.has(k) ? state.sdoh.delete(k) : state.sdoh.add(k); c.classList.toggle('on'); $('sdoh-count').textContent = `Adverse social factors: ${state.sdoh.size} of 9`; });
+$('zip').addEventListener('input', () => { const z = $('zip').value; $('h-zip').textContent = z && !/^\d{5}$/.test(z) ? 'Enter 5 digits' : ''; });
+document.querySelectorAll('[data-ex]').forEach(b => b.onclick = () => { loadEx(b.dataset.ex); if (innerWidth <= 920) $('results').scrollIntoView({behavior:'smooth'}); });
+$('reset').onclick = () => { document.querySelectorAll('#view-calc input[type=number],#view-calc input[type=text]').forEach(i => i.value = ''); document.querySelectorAll('.dev input').forEach(i => i.checked = false); $('status').value = ''; $('exc').value = '0'; state.sdoh.clear(); document.querySelectorAll('#sdoh-chips .chip').forEach(c => c.classList.remove('on')); $('sdoh-count').textContent = 'Adverse social factors: 0 of 9'; render(); };
+$('copy').onclick = async () => { const t = summary(); try { await navigator.clipboard.writeText(t); $('copy').textContent = 'Copied'; } catch (e) { $('copy').textContent = 'Copy blocked'; } setTimeout(() => $('copy').textContent = 'Copy summary', 1500); };
+$('dock').onclick = () => $('results').scrollIntoView({behavior:'smooth'});
+document.querySelectorAll('.nav button').forEach(b => b.onclick = () => { document.querySelectorAll('.nav button').forEach(x => x.classList.toggle('active', x === b)); document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + b.dataset.view)); $('dock').style.visibility = b.dataset.view === 'calc' ? '' : 'hidden'; scrollTo(0, 0); });
+function setTheme(t){ document.documentElement.dataset.theme = t; document.querySelectorAll('.theme-toggle button').forEach(b => b.classList.toggle('on', b.dataset.t === t)); document.querySelector('meta[name=theme-color]').content = t === 'monitor' ? '#080b10' : '#f3ede4'; try { localStorage.setItem('uscrs-theme', t); } catch (e) {} }
+document.querySelectorAll('.theme-toggle button').forEach(b => b.onclick = () => setTheme(b.dataset.t));
+try { const t = localStorage.getItem('uscrs-theme'); if (t) setTheme(t); } catch (e) {}
+$('to-mobile').onclick = e => { try { localStorage.setItem('uscrs-view', 'mobile'); } catch (x) {} };
+buildMeter(); clearResults();
+try { if ('serviceWorker' in navigator && location.protocol === 'https:') addEventListener('load', () => { try { navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) {} }); } catch (e) {}
+</script>
+</body>
+</html>

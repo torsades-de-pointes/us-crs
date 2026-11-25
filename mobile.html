@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="champagne">
+<head>
+<meta charset="utf-8">
+<script>
+/* If the user explicitly chose desktop, honour it on wide screens too. */
+(function(){try{ if(/[?&]mobile\b/.test(location.search)) localStorage.setItem('uscrs-view','mobile'); }catch(e){}})();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>US-CRS 2.0 · Mobile</title>
+<meta name="description" content="Mobile calculator for the US Candidate Risk Score 2.0 (Lyden et al., JAMA 2026).">
+<meta name="theme-color" content="#f3ede4">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="US-CRS 2.0">
+<meta name="format-detection" content="telephone=no">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Nunito:wght@400;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{--font-d:'Fraunces',Georgia,serif;--font-b:'Nunito',-apple-system,system-ui,sans-serif;--font-m:'IBM Plex Mono',ui-monospace,Menlo,monospace;--tabh:62px}
+[data-theme="champagne"]{--bg:#f3ede4;--panel:#fffdfa;--inset:#f5efe5;--line:#e3d9ca;--ink:#2a2320;--ink2:#5f5449;--ink3:#9c8f80;--accent:#a8465c;--accent-soft:#f9edef;--t1:#8f2f45;--t2:#b8384f;--t3:#c0851a;--t4:#41608f;--t5:#2f8577;--t6:#7b8a7f;--ok:#2f7a5c;--warn:#a9761b;--bar:rgba(255,253,250,.92);--sw-off:#d8cdbd}
+[data-theme="monitor"]{--bg:#080b10;--panel:#0f151d;--inset:#0c1219;--line:#1f2a37;--ink:#e6edf5;--ink2:#93a1b3;--ink3:#5d6c79;--accent:#ff5a6e;--accent-soft:#25121a;--t1:#ff5a6e;--t2:#ff8a5c;--t3:#f3b52f;--t4:#5f8dff;--t5:#39d6c0;--t6:#6f7f8f;--ok:#2ee3a6;--warn:#f3b52f;--bar:rgba(15,21,29,.92);--sw-off:#263241}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-b);font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased;overscroll-behavior-y:none}
+button,input,select{font:inherit;color:inherit}
+a{color:var(--accent);text-decoration:none}
+
+/* header: app bar + live score strip */
+.head{position:sticky;top:0;z-index:20;background:var(--bar);backdrop-filter:saturate(1.4) blur(12px);-webkit-backdrop-filter:saturate(1.4) blur(12px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.appbar{display:flex;align-items:center;gap:10px;padding:8px 16px 4px}
+.appbar img{width:28px;height:28px;border-radius:7px}
+.appbar .name{font-family:var(--font-d);font-weight:700;font-size:18px}
+.appbar .name span{color:var(--accent)}
+.iconbtn{margin-left:auto;width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--inset);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.iconbtn svg{width:20px;height:20px;stroke:var(--ink2);fill:none;stroke-width:2}
+.strip{display:flex;align-items:center;gap:12px;padding:4px 16px 10px}
+.strip .num{font-family:var(--font-d);font-weight:700;font-size:40px;line-height:1;color:var(--accent);min-width:56px}
+.strip .num small{font-size:14px;color:var(--ink3);font-weight:600}
+.strip .mid{flex:1;min-width:0}
+.pill{display:inline-block;font-weight:800;font-size:12.5px;padding:3px 10px;border-radius:12px;color:#fff;background:var(--ink3)}
+.strip .risk{font-family:var(--font-m);font-size:12px;color:var(--ink2);margin-left:6px}
+.meter{position:relative;height:8px;border-radius:4px;margin-top:8px;display:flex;overflow:visible}
+.meter span{display:block;height:100%}
+.meter span:first-child{border-radius:4px 0 0 4px}.meter span:last-child{border-radius:0 4px 4px 0}
+.mk{position:absolute;top:-4px;width:4px;height:16px;border-radius:2px;background:var(--ink);transform:translateX(-50%);transition:left .2s;display:none}
+
+/* panes */
+main{padding:12px 14px calc(var(--tabh) + 24px + env(safe-area-inset-bottom))}
+.pane{display:none}.pane.on{display:block}
+.note-top{font-size:12.5px;color:var(--ink2);padding:2px 4px 10px}
+.gtitle{font-family:var(--font-m);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin:16px 6px 6px;display:flex;justify-content:space-between;align-items:center}
+.group{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.row{display:flex;align-items:center;gap:10px;min-height:54px;padding:8px 14px;border-top:1px solid var(--line)}
+.row:first-child{border-top:none}
+.row .lab{flex:1;min-width:0}
+.row .lab .t{font-weight:700;font-size:16px}
+.row .lab .u{font-family:var(--font-m);font-size:11px;color:var(--ink3)}
+.row .lab .h{font-size:12px;color:var(--warn);margin-top:1px}
+.row .lab .d{font-size:12.5px;color:var(--ink3);line-height:1.3}
+.row input[type=number],.row input[type=text]{width:112px;text-align:right;font-family:var(--font-m);font-size:18px;font-weight:600;background:var(--inset);border:1px solid var(--line);border-radius:10px;padding:9px 10px;outline:none}
+.row input:focus{border-color:var(--accent)}
+.row input::placeholder{color:var(--ink3);font-weight:500}
+.seg{display:flex;background:var(--inset);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
+.seg button{flex:1;border:none;background:none;padding:7px 8px;min-height:34px;border-radius:8px;font-size:13.5px;font-weight:700;color:var(--ink2);cursor:pointer;white-space:nowrap}
+.seg button.on{background:var(--panel);color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.row.segrow{display:block}
+.row.segrow .seg{margin-top:6px}
+/* switch */
+.sw{position:relative;width:52px;height:32px;flex-shrink:0}
+.sw input{opacity:0;width:0;height:0;position:absolute}
+.sw .tr{position:absolute;inset:0;background:var(--sw-off);border-radius:16px;transition:background .2s;cursor:pointer}
+.sw .tr::after{content:'';position:absolute;left:3px;top:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .2s}
+.sw input:checked + .tr{background:var(--accent)}
+.sw input:checked + .tr::after{transform:translateX(20px)}
+.sw input:focus-visible + .tr{outline:2px solid var(--accent);outline-offset:2px}
+.pts{font-family:var(--font-m);font-size:11px;color:var(--accent)}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px;padding:10px 14px 14px}
+.chip{border:1px solid var(--line);background:var(--inset);border-radius:18px;padding:8px 12px;font-size:13.5px;font-weight:700;color:var(--ink2);cursor:pointer;user-select:none;-webkit-user-select:none}
+.chip.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.hscroll{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 2px 6px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.hscroll::-webkit-scrollbar{display:none}
+.hscroll .ex{flex:none;scroll-snap-align:start;width:168px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;text-align:left;cursor:pointer}
+.ex .n{font-family:var(--font-m);font-size:11px;color:var(--ink3)}
+.ex .t{font-weight:800;font-size:14px;line-height:1.25;margin-top:3px}
+.beta{font-size:9.5px;color:var(--warn);border:1px solid currentColor;border-radius:6px;padding:1px 6px;letter-spacing:.08em}
+.btn{display:block;width:100%;min-height:50px;border-radius:14px;border:1px solid var(--line);background:var(--panel);font-weight:800;font-size:16px;cursor:pointer;margin-top:12px;color:var(--ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+details.group summary{list-style:none;display:flex;align-items:center;justify-content:space-between;min-height:54px;padding:8px 14px;font-weight:700;cursor:pointer}
+details.group summary::-webkit-details-marker{display:none}
+details.group summary .chev{color:var(--ink3);transition:transform .2s}
+details.group[open] summary .chev{transform:rotate(90deg)}
+details.group .inner{border-top:1px solid var(--line)}
+.small{font-size:12.5px;color:var(--ink3);padding:10px 14px}
+
+/* results pane */
+.big{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px 16px;text-align:center}
+.big .s{font-family:var(--font-d);font-weight:700;font-size:84px;line-height:.95;color:var(--accent)}
+.big .s small{font-size:22px;color:var(--ink3);font-weight:600}
+.big .pill{font-size:14px;padding:5px 14px;margin-top:8px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
+.stat .k{font-size:12px;color:var(--ink3);line-height:1.25}
+.stat .v{font-family:var(--font-m);font-weight:600;font-size:20px;margin-top:4px}
+.msg{font-size:14px;border-radius:12px;padding:10px 12px;margin-top:10px;border:1px solid var(--line);background:var(--panel)}
+.msg.warn{border-color:color-mix(in srgb,var(--warn) 50%,transparent)}
+.msg.alert{border-color:color-mix(in srgb,var(--accent) 50%,transparent)}
+.crow{display:grid;grid-template-columns:104px 1fr 46px;align-items:center;gap:8px;font-size:14px;padding:7px 14px;border-top:1px solid var(--line)}
+.crow:first-child{border-top:none}
+.cbar{position:relative;height:10px;background:var(--inset);border-radius:5px}
+.cbar .m0{position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--ink3)}
+.cbar .b{position:absolute;top:0;height:100%;border-radius:5px}
+.crow .v{font-family:var(--font-m);font-weight:600;text-align:right}
+.wrow{display:flex;justify-content:space-between;gap:10px;padding:12px 14px;border-top:1px solid var(--line);font-size:15px}
+.wrow:first-child{border-top:none}
+.wrow .r{font-family:var(--font-m);font-weight:600;white-space:nowrap}
+.wrow .r span{color:var(--ink3)}
+.empty{text-align:center;color:var(--ink3);padding:30px 10px;font-size:15px}
+
+/* info pane */
+.prose{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.prose h3{font-family:var(--font-d);font-size:18px;margin:14px 0 4px}
+.prose h3:first-child{margin-top:0}
+.prose p,.prose li{font-size:14.5px;color:var(--ink2);margin-bottom:8px}
+.prose ul{padding-left:18px}
+.formula{font-family:var(--font-m);font-size:12px;background:var(--inset);border:1px solid var(--line);border-radius:10px;padding:10px;white-space:pre;overflow-x:auto;color:var(--ink);margin:6px 0 10px}
+table.ref{width:100%;border-collapse:collapse;font-size:13.5px;margin:4px 0 10px}
+table.ref td{padding:6px 4px;border-bottom:1px solid var(--line);color:var(--ink2)}
+table.ref td:last-child{text-align:right;font-family:var(--font-m);color:var(--ink)}
+
+/* bottom tab bar */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;background:var(--bar);backdrop-filter:saturate(1.4) blur(12px);-webkit-backdrop-filter:saturate(1.4) blur(12px);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+.tabs button{flex:1;height:var(--tabh);border:none;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11.5px;font-weight:800;color:var(--ink3);cursor:pointer}
+.tabs svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.tabs button.on{color:var(--accent)}
+.tabs .badge{font-family:var(--font-m);font-size:10px;background:var(--accent);color:#fff;border-radius:8px;padding:0 5px;margin-left:2px}
+@media (min-width:700px){main,.appbar,.strip{max-width:640px;margin-left:auto;margin-right:auto}}
+</style>
+</head>
+<body>
+<header class="head">
+  <div class="appbar">
+    <img src="icons/icon-192.png" alt="">
+    <div class="name">US-CRS <span>2.0</span></div>
+    <button class="iconbtn" id="theme" aria-label="Switch day or night theme"><svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+  </div>
+  <div class="strip" id="strip" role="button" aria-label="Show results">
+    <div class="num" id="s-num">–</div>
+    <div class="mid">
+      <div><span class="pill" id="s-pill">Enter values</span><span class="risk" id="s-risk"></span></div>
+      <div class="meter" id="meter"><div class="mk" id="mk"></div></div>
+    </div>
+  </div>
+</header>
+
+<main>
+<!-- ============ INPUTS ============ -->
+<section class="pane on" id="p-inputs">
+  <div class="note-top">Research and education tool; not current OPTN policy. Enter no identifiers. Blank labs use the national median.</div>
+
+  <div class="gtitle">Examples</div>
+  <div class="hscroll" id="examples"></div>
+
+  <div class="gtitle">Laboratory values</div>
+  <div class="group">
+    <div class="row"><div class="lab"><div class="t">Albumin</div><div class="u">g/dL</div><div class="h" id="h-alb"></div></div><input id="alb" type="number" inputmode="decimal" step="0.1" placeholder="3.6" aria-label="Albumin g/dL"></div>
+    <div class="row"><div class="lab"><div class="t">Bilirubin</div><div class="u">mg/dL, total</div><div class="h" id="h-bili"></div></div><input id="bili" type="number" inputmode="decimal" step="0.1" placeholder="1.0" aria-label="Bilirubin mg/dL"></div>
+    <div class="row"><div class="lab"><div class="t">Sodium</div><div class="u">mEq/L</div><div class="h" id="h-na"></div></div><input id="na" type="number" inputmode="decimal" step="1" placeholder="135" aria-label="Sodium mEq/L"></div>
+    <div class="row segrow"><div class="seg" id="seg-np"><button data-v="nt" class="on">NT-proBNP</button><button data-v="bnp">BNP</button></div></div>
+    <div class="row"><div class="lab"><div class="t" id="np-label">NT-proBNP</div><div class="u">pg/mL</div><div class="h" id="h-np"></div></div><input id="np" type="number" inputmode="decimal" step="1" placeholder="2500" aria-label="Natriuretic peptide pg/mL"></div>
+  </div>
+
+  <div class="gtitle">Kidney function <span style="text-transform:none;letter-spacing:0">CKD-EPI 2021</span></div>
+  <div class="group">
+    <div class="row segrow"><div class="seg" id="seg-kid"><button data-v="cr" class="on">From creatinine</button><button data-v="egfr">Enter eGFR</button></div></div>
+    <div id="kid-cr">
+      <div class="row"><div class="lab"><div class="t">Creatinine</div><div class="u">mg/dL</div></div><input id="cr" type="number" inputmode="decimal" step="0.01" placeholder="1.2" aria-label="Creatinine mg/dL"></div>
+      <div class="row"><div class="lab"><div class="t">Age</div><div class="u">years</div></div><input id="age" type="number" inputmode="numeric" step="1" placeholder="55" aria-label="Age"></div>
+      <div class="row"><div class="lab"><div class="t">Sex</div></div><div class="seg" id="seg-sex" style="width:150px"><button data-v="m" class="on">Male</button><button data-v="f">Female</button></div></div>
+    </div>
+    <div id="kid-egfr" style="display:none">
+      <div class="row"><div class="lab"><div class="t">eGFR</div><div class="u">mL/min/1.73 m²</div></div><input id="egfr" type="number" inputmode="decimal" step="1" placeholder="60" aria-label="eGFR"></div>
+    </div>
+    <div class="small" id="h-egfr" style="padding-top:0"></div>
+  </div>
+
+  <div class="gtitle">Mechanical support</div>
+  <div class="group">
+    <label class="row"><div class="lab"><div class="t">Durable LVAD</div><div class="d">Any time since listing</div><div class="pts">−3.5 points</div></div><span class="sw"><input type="checkbox" id="lvad"><span class="tr"></span></span></label>
+    <label class="row"><div class="lab"><div class="t">Advanced MCS</div><div class="d">VA-ECMO or temporary surgical VAD, since listing</div><div class="pts">+13.6 points</div></div><span class="sw"><input type="checkbox" id="amcs"><span class="tr"></span></span></label>
+    <label class="row"><div class="lab"><div class="t">IABP</div><div class="d">Currently in place</div><div class="pts">+6.2 points</div></div><span class="sw"><input type="checkbox" id="iabp"><span class="tr"></span></span></label>
+    <label class="row"><div class="lab"><div class="t">Microaxial flow pump</div><div class="d">Current Impella or similar</div><div class="pts">+6.1 points</div></div><span class="sw"><input type="checkbox" id="mfp"><span class="tr"></span></span></label>
+  </div>
+
+  <div class="gtitle">Current OPTN status <span style="text-transform:none;letter-spacing:0">optional</span></div>
+  <div class="group">
+    <div class="row segrow"><div class="seg" id="seg-status"><button data-v="" class="on">–</button><button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button><button data-v="4">4</button><button data-v="5">5</button><button data-v="6">6</button></div></div>
+    <label class="row"><div class="lab"><div class="t">Listed by exception</div></div><span class="sw"><input type="checkbox" id="exc"><span class="tr"></span></span></label>
+  </div>
+
+  <div class="gtitle">Social context <span class="beta">BETA · NOT SCORED</span></div>
+  <details class="group">
+    <summary><span>ZIP, drive time, social factors <span class="pts" id="sdoh-n" style="color:var(--ink3)"></span></span><span class="chev">›</span></summary>
+    <div class="inner">
+      <div class="small">Recorded for future versions. These fields do not change the score.</div>
+      <div class="row"><div class="lab"><div class="t">Home ZIP</div><div class="h" id="h-zip"></div></div><input id="zip" type="text" inputmode="numeric" maxlength="5" placeholder="35233" aria-label="ZIP code"></div>
+      <div class="row"><div class="lab"><div class="t">Drive time</div><div class="u">minutes to center</div></div><input id="drive" type="number" inputmode="numeric" placeholder="120" aria-label="Drive time minutes"></div>
+      <div class="chips" id="sdoh"></div>
+    </div>
+  </details>
+
+  <button class="btn primary" id="go">See results</button>
+  <button class="btn" id="reset">Reset</button>
+</section>
+
+<!-- ============ RESULTS ============ -->
+<section class="pane" id="p-results">
+  <div id="res-empty" class="empty">Enter at least one lab value or device on the Inputs tab.</div>
+  <div id="res" style="display:none">
+    <div class="big"><div class="s" id="r-s">–</div><div><span class="pill" id="r-pill"></span></div></div>
+    <div class="stats">
+      <div class="stat"><div class="k">Est. 6-week death without transplant</div><div class="v" id="r-m">–</div></div>
+      <div class="stat"><div class="k">Lab-only score (devices removed)</div><div class="v" id="r-lab">–</div></div>
+    </div>
+    <div id="r-msgs"></div>
+    <div class="gtitle">What drives the score</div>
+    <div class="group" id="r-contrib"></div>
+    <div class="small">Points vs a typical candidate (albumin 4.1, bilirubin 0.6, eGFR 67, sodium 138, NT-proBNP 912, no devices). Red adds urgency; green lowers it.</div>
+    <div class="gtitle">Device what-if</div>
+    <div class="group" id="r-whatif"></div>
+    <div class="small" id="r-lp"></div>
+    <button class="btn primary" id="copy">Copy summary</button>
+  </div>
+</section>
+
+<!-- ============ INFO ============ -->
+<section class="pane" id="p-info">
+  <div class="prose">
+    <h3>About the score</h3>
+    <p>US-CRS 2.0 estimates a candidate's risk of death or delisting for deterioration within 6 weeks without a transplant, from five labs and four devices. It is a proposed replacement for the 6-status ranking; it is not current OPTN policy.</p>
+    <h3>6-Status US-CRS tiers</h3>
+    <table class="ref">
+      <tr><td>Tier 1</td><td>50</td></tr><tr><td>Tier 2</td><td>45–49</td></tr><tr><td>Tier 3</td><td>40–44</td></tr>
+      <tr><td>Tier 4</td><td>30–39</td></tr><tr><td>Tier 5</td><td>20–29</td></tr><tr><td>Tier 6</td><td>1–19</td></tr>
+    </table>
+    <h3>Formula</h3>
+    <div class="formula">LP = 7.45 − 0.837·albumin
+   + 0.911·ln(bilirubin+1)
+   − 0.00862·eGFR
+   + 0.178·ln(NP+1) − 1.449·NT
+   + 0.139·ln(NP+1)·NT
+   − 0.07954·sodium
+   − 0.43·LVAD + 0.757·IABP
+   + 0.75·MFP + 1.676·aMCS</div>
+    <p>Score 50 if LP &gt; −3.5457; score 1 if LP ≤ −9.4417; equal bins of 0.1228 between. 6-week risk ≈ 1 − (1 − h)<sup>6</sup>, h = logistic(LP); it over-predicts at the top of the scale.</p>
+    <h3>Caps and missing values</h3>
+    <table class="ref">
+      <tr><td>Albumin</td><td>2.5–5.1 · 4.1</td></tr><tr><td>Bilirubin</td><td>0.2–2.8 · 0.6</td></tr>
+      <tr><td>eGFR</td><td>5.4–130 · Cr 1.2</td></tr><tr><td>Sodium</td><td>129–145 · 138</td></tr>
+      <tr><td>BNP</td><td>14–3,845 · 237</td></tr><tr><td>NT-proBNP</td><td>41–34,163 · 912</td></tr>
+    </table>
+    <h3>Limitations</h3>
+    <ul>
+      <li>No hemodynamics, diagnosis, age or sex in the score.</li>
+      <li>Lab caps flatten the top of the scale.</li>
+      <li>NT-proBNP runs lower with obesity and in Black adults.</li>
+      <li>Device points depend on device access; not validated across social-risk groups.</li>
+      <li>Urgency only; says nothing about benefit after transplant.</li>
+    </ul>
+    <h3>Source</h3>
+    <p>Lyden GR, et al. Development and validation of an adult medical urgency score for US donor heart allocation. <i>JAMA</i>. 2026;336(18):1621–1629. <a href="https://doi.org/10.1001/jama.2026.17403">doi:10.1001/jama.2026.17403</a></p>
+    <h3>Install</h3>
+    <p><b>iPhone:</b> Safari → Share → Add to Home Screen.<br><b>Android:</b> Chrome → ⋮ → Install app. Works offline once installed.</p>
+    <h3>Privacy</h3>
+    <p>Everything runs on your phone. Nothing is saved or sent.</p>
+    <a class="btn" href="index.html?desktop" id="to-desktop" style="text-align:center;line-height:48px">Open desktop version</a>
+    <p class="small" style="padding:10px 0 0">Version 1.1 · Mobile · MIT License · Built for UAB AHFTC teaching and research.</p>
+  </div>
+</section>
+</main>
+
+<nav class="tabs" aria-label="Sections">
+  <button class="on" data-p="inputs"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Inputs</button>
+  <button data-p="results"><svg viewBox="0 0 24 24"><path d="M4 16a8 8 0 0 1 16 0"/><path d="M12 16l4-5"/></svg><span>Results<span class="badge" id="tab-badge" style="display:none"></span></span></button>
+  <button data-p="info"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>Info</button>
+</nav>
+
+<script src="model.js"></script>
+<script>
+{
+'use strict';
+const M = window.USCRS;
+const $ = id => document.getElementById(id);
+const num = id => { const v = $(id).value.trim(); if (v === '') return null; const x = Number(v); return Number.isFinite(x) ? x : null; };
+const st = {np:'nt', kid:'cr', sex:'m', status:'', sdoh:new Set()};
+let last = null;
+
+/* static UI */
+$('meter').insertAdjacentHTML('afterbegin', [...M.TIERS].reverse().map(t => `<span style="width:${(t.hi - t.lo + 1) / 50 * 100}%;background:var(${t.col});opacity:.85"></span>`).join(''));
+$('examples').innerHTML = Object.entries(M.EXAMPLES).map(([k, e]) => `<button class="ex" data-ex="${k}"><div class="n">Case ${k}</div><div class="t">${e.title}</div></button>`).join('');
+$('sdoh').innerHTML = M.SDOH.map(([k, l]) => `<span class="chip" data-k="${k}">${l}</span>`).join('');
+
+function seg(id, v){ document.querySelectorAll(`#${id} button`).forEach(b => b.classList.toggle('on', b.dataset.v === v)); }
+function setKid(v){ st.kid = v; seg('seg-kid', v); $('kid-cr').style.display = v === 'cr' ? '' : 'none'; $('kid-egfr').style.display = v === 'egfr' ? '' : 'none'; }
+function setNP(v){ st.np = v; seg('seg-np', v); $('np-label').textContent = v === 'nt' ? 'NT-proBNP' : 'BNP'; $('np').placeholder = v === 'nt' ? '2500' : '600'; }
+const devs = () => ({lvad:$('lvad').checked, iabp:$('iabp').checked, mfp:$('mfp').checked, amcs:$('amcs').checked});
+
+function render(){
+  const raw = {alb:num('alb'), bili:num('bili'), na:num('na'), np:num('np'), isNT:st.np === 'nt', kid:st.kid, egfr:num('egfr'), cr:num('cr'), age:num('age'), female:st.sex === 'f'};
+  const dev = devs();
+  const any = ['alb','bili','na','np','cr','egfr'].some(id => num(id) !== null) || Object.values(dev).some(Boolean);
+  const p = M.prepare(raw);
+  ['alb','bili','na','np'].forEach(k => $('h-' + k).textContent = any ? (p.hints[k] || '') : '');
+  $('h-egfr').textContent = any ? (p.hints.egfr || '') : '';
+  if (!any){ clear(); return; }
+  const ev = M.evaluate(p.x, dev); last = {x:p.x, dev, ev, flags:p.flags};
+  // strip
+  $('s-num').innerHTML = `${ev.s}<small>/50</small>`;
+  $('s-pill').textContent = ev.t.name; $('s-pill').style.background = `var(${ev.t.col})`;
+  $('s-risk').textContent = `${(ev.m * 100).toFixed(1)}% 6-wk`;
+  const mk = $('mk'); mk.style.display = 'block'; mk.style.left = ((ev.s - 0.5) / 50 * 100) + '%';
+  $('tab-badge').style.display = ''; $('tab-badge').textContent = ev.s;
+  // results
+  $('res-empty').style.display = 'none'; $('res').style.display = '';
+  $('r-s').innerHTML = `${ev.s}<small>/50</small>`;
+  $('r-pill').textContent = `6-Status US-CRS ${ev.t.name}`; $('r-pill').style.background = `var(${ev.t.col})`;
+  $('r-m').textContent = (ev.m * 100).toFixed(1) + '%';
+  $('r-lab').textContent = `${ev.sLab} · ${ev.tLab.name}`;
+  const msgs = [];
+  if (dev.lvad && (dev.iabp || dev.mfp)) msgs.push(['warn', '<b>Check devices.</b> Durable LVAD plus a temporary pump is unusual.']);
+  const dc = M.discordance(st.status, $('exc').checked, ev.t); if (dc) msgs.push([dc.cls, dc.html]);
+  if (p.flags.length) msgs.push(['warn', '<b>Imputed or capped:</b><br>' + p.flags.map(f => '• ' + f).join('<br>')]);
+  if (ev.m > 0.2) msgs.push(['', 'The model over-estimates absolute risk at the top of the scale; read high estimates as relative.']);
+  $('r-msgs').innerHTML = msgs.map(([c, h]) => `<div class="msg ${c}">${h}</div>`).join('');
+  const rows = M.contributions(p.x, dev), mx = Math.max(14, ...rows.map(r => Math.abs(r[1])));
+  $('r-contrib').innerHTML = rows.map(([k, v]) => { const w = Math.abs(v) / mx * 50, l = v >= 0 ? 50 : 50 - w; return `<div class="crow"><span>${k}</span><span class="cbar"><span class="m0"></span><span class="b" style="left:${l}%;width:${w}%;background:${v >= 0 ? 'var(--accent)' : 'var(--ok)'}"></span></span><span class="v">${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(1)}</span></div>`; }).join('');
+  $('r-whatif').innerHTML = M.whatIf(p.x, dev).map(w => `<div class="wrow"><span>${w.label}</span><span class="r">${w.s} · ${w.t.name} <span>(${w.d > 0 ? '+' : w.d < 0 ? '−' : '±'}${Math.abs(w.d)})</span></span></div>`).join('');
+  $('r-lp').textContent = `Linear predictor (weekly log-odds): ${ev.lp.toFixed(3)}`;
+}
+function clear(){
+  last = null;
+  $('s-num').textContent = '–'; $('s-pill').textContent = 'Enter values'; $('s-pill').style.background = 'var(--ink3)'; $('s-risk').textContent = '';
+  $('mk').style.display = 'none'; $('tab-badge').style.display = 'none';
+  $('res-empty').style.display = ''; $('res').style.display = 'none';
+}
+function show(p){
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.p === p));
+  document.querySelectorAll('.pane').forEach(x => x.classList.toggle('on', x.id === 'p-' + p));
+  scrollTo(0, 0);
+}
+function loadEx(k){
+  const e = M.EXAMPLES[k];
+  $('alb').value = e.alb; $('bili').value = e.bili; $('na').value = e.na; $('np').value = e.np == null ? '' : e.np;
+  setNP(e.isNT ? 'nt' : 'bnp'); setKid(e.kid); $('egfr').value = e.egfr; $('cr').value = ''; $('age').value = '';
+  ['lvad','iabp','mfp','amcs'].forEach(d => $(d).checked = !!e.dev[d]);
+  st.status = e.status; seg('seg-status', e.status); $('exc').checked = !!e.exc;
+  render(); show('results');
+}
+
+/* events */
+document.querySelectorAll('input').forEach(el => el.addEventListener('input', render));
+document.querySelectorAll('input[type=checkbox]').forEach(el => el.addEventListener('change', render));
+document.querySelectorAll('#seg-np button').forEach(b => b.onclick = () => { setNP(b.dataset.v); render(); });
+document.querySelectorAll('#seg-kid button').forEach(b => b.onclick = () => { setKid(b.dataset.v); render(); });
+document.querySelectorAll('#seg-sex button').forEach(b => b.onclick = () => { st.sex = b.dataset.v; seg('seg-sex', st.sex); render(); });
+document.querySelectorAll('#seg-status button').forEach(b => b.onclick = () => { st.status = b.dataset.v; seg('seg-status', st.status); render(); });
+document.querySelectorAll('#examples .ex').forEach(b => b.onclick = () => loadEx(b.dataset.ex));
+document.querySelectorAll('#sdoh .chip').forEach(c => c.onclick = () => { const k = c.dataset.k; st.sdoh.has(k) ? st.sdoh.delete(k) : st.sdoh.add(k); c.classList.toggle('on'); $('sdoh-n').textContent = st.sdoh.size ? `· ${st.sdoh.size} selected` : ''; });
+$('zip').addEventListener('input', () => { const z = $('zip').value; $('h-zip').textContent = z && !/^\d{5}$/.test(z) ? 'Enter 5 digits' : ''; });
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => show(b.dataset.p));
+$('strip').onclick = () => show('results');
+$('go').onclick = () => show('results');
+$('reset').onclick = () => {
+  document.querySelectorAll('#p-inputs input[type=number],#p-inputs input[type=text]').forEach(i => i.value = '');
+  document.querySelectorAll('#p-inputs input[type=checkbox]').forEach(i => i.checked = false);
+  st.status = ''; seg('seg-status', ''); st.sdoh.clear(); document.querySelectorAll('#sdoh .chip').forEach(c => c.classList.remove('on')); $('sdoh-n').textContent = '';
+  render(); scrollTo(0, 0);
+};
+$('copy').onclick = async () => {
+  if (!last) return;
+  const t = M.summary({x:last.x, dev:last.dev, ev:last.ev, flags:last.flags, status:st.status, exc:$('exc').checked, zip:$('zip').value, sdohCount:st.sdoh.size});
+  try { await navigator.clipboard.writeText(t); $('copy').textContent = 'Copied'; } catch (e) { $('copy').textContent = 'Copy blocked by browser'; }
+  setTimeout(() => $('copy').textContent = 'Copy summary', 1600);
+};
+$('to-desktop').onclick = () => { try { localStorage.setItem('uscrs-view', 'desktop'); } catch (e) {} };
+function setTheme(t){ document.documentElement.dataset.theme = t; document.querySelector('meta[name=theme-color]').content = t === 'monitor' ? '#080b10' : '#f3ede4'; try { localStorage.setItem('uscrs-theme', t); } catch (e) {} }
+$('theme').onclick = () => setTheme(document.documentElement.dataset.theme === 'monitor' ? 'champagne' : 'monitor');
+try { const t = localStorage.getItem('uscrs-theme'); if (t) setTheme(t); } catch (e) {}
+clear();
+try { if ('serviceWorker' in navigator && location.protocol === 'https:') addEventListener('load', () => { try { navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) {} }); } catch (e) {}
+}
+</script>
+</body>
+</html>

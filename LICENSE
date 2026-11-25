@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2026 Vibhu Parcha
+Copyright (c) 2026 torsades-de-pointes
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +19,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+The US-CRS 2.0 model coefficients, trimming bounds, imputation values and
+score mapping are taken from Lyden GR, et al. JAMA. 2026;336(18):1621-1629
+(doi:10.1001/jama.2026.17403). Cite the original publication when using the score.
